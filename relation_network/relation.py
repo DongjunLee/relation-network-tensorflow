@@ -27,14 +27,24 @@ class RN:
 
     def _g_layer(self, input, reuse=tf.AUTO_REUSE):
         with tf.variable_scope("g-layer", reuse=reuse):
-            hidden = tf.layers.dense(input, self.g_units[0], name="mlp-0")
+            hidden = tf.layers.dense(input, self.g_units[0],
+                    activation=tf.nn.relu,
+                    kernel_initializer=tf.contrib.layers.xavier_initializer(),
+                    name="mlp-0")
             for index, unit in enumerate(self.g_units[1:]):
-                hidden = tf.layers.dense(hidden, unit, name=f"mlp-{(index+1)}")
+                hidden = tf.layers.dense(hidden, unit,
+                                         activation=tf.nn.relu,
+                                         kernel_initializer=tf.contrib.layers.xavier_initializer(),
+                                         name=f"mlp-{(index+1)}")
             return hidden
 
     def _f_layer(self, input):
         with tf.variable_scope("f-layer"):
-            hidden = tf.layers.dense(input, self.f_units[0])
+            hidden = tf.layers.dense(input, self.f_units[0],
+                                     activation=tf.nn.relu,
+                                     kernel_initializer=tf.contrib.layers.xavier_initializer())
             for unit in self.f_units[1:]:
-                hidden = tf.layers.dense(hidden, unit)
+                hidden = tf.layers.dense(hidden, unit,
+                                         activation=tf.nn.relu,
+                                         kernel_initializer=tf.contrib.layers.xavier_initializer())
         return hidden
