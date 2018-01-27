@@ -45,7 +45,9 @@ class Model:
 
     def build_graph(self):
         graph = relation_network.Graph(self.mode)
-        output = graph.build(inputs=self.inputs)
+        output = graph.build(embedding_input=self.embedding_input,
+                             input_mask=self.input_mask,
+                             embedding_question=self.embedding_question)
 
         self._build_prediction(output)
         if self.mode != tf.estimator.ModeKeys.PREDICT:

@@ -88,6 +88,9 @@ class Encoder:
             stacked_rnn
         """
 
+        if self.num_layers == 1:
+            return self._rnn_single_cell()
+
         stacked_rnn = []
         for _ in range(self.num_layers):
             single_cell = self._rnn_single_cell()

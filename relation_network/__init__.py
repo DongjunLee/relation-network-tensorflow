@@ -3,6 +3,7 @@ from hbconfig import Config
 import tensorflow as tf
 
 from .encoder import Encoder
+from .relation import RN
 
 
 
@@ -56,16 +57,14 @@ class Graph:
                 # max_input_mask_length x [batch_size, num_units]
                 facts = tf.unstack(tf.transpose(facts_stacked, [1, 0, 2]), num=Config.data.max_input_mask_length)
 
-        with tf.variable_scope("input-module") as scope:
-            scope.reuse_variables()
+        with tf.variable_scope("input-module", reuse=True):
             _, question = encoder.build(
                     embedding_question, question_length, scope="encoder")
 
         return facts, question[0]
 
     def _build_relational_module(self, facts, question):
-        # TODO:
-        # 1. Object(fact) pair with question
-        # 2. g_layer (MLP) -> element-wise sum
-        # 3. f_layer (MLP) -> output
-        pass
+        with tf.variable_scope("relational-network-module"):
+            rn = RN(g_units=Config.model.g_units,
+                    f_units=Config.model.f_units)
+            return rn.build(facts, question)
