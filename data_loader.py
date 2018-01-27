@@ -189,15 +189,15 @@ class DataLoader:
             q = x["Q"].lower().split(' ')
             q = [w for w in q if len(w) > 0]
 
-            inp_vector = [self.process_word(word=w, to_return="word2vec") for w in inp]
-            inp_vector = self.pad_input(inp_vector, self.max_facts_seq_len, [np.zeros(self.w2v_dim)])
+            inp_vector = [self.process_word(word=w, to_return="index") for w in inp]
+            inp_vector = self.pad_input(inp_vector, self.max_facts_seq_len, [0])
 
-            q_vector = [self.process_word(word=w, to_return="word2vec") for w in q]
-            q_vector = self.pad_input(q_vector, self.max_question_seq_len, [np.zeros(self.w2v_dim)])
+            q_vector = [self.process_word(word=w, to_return="index") for w in q]
+            q_vector = self.pad_input(q_vector, self.max_question_seq_len, [0])
 
-            inputs.append(np.vstack(inp_vector).astype(float))
-            questions.append(np.vstack(q_vector).astype(float))
-            answers.append(self.process_word(word = x["A"], to_return = "index"))
+            inputs.append(inp_vector)
+            questions.append(q_vector)
+            answers.append(self.process_word(word=x["A"], to_return="index"))
 
             if self.input_mask_mode == 'word':
                 input_masks.append(np.array([index for index, w in enumerate(inp)], dtype=np.int32))
@@ -208,8 +208,8 @@ class DataLoader:
             else:
                 raise ValueError("input_mask_mode is only available (word, sentence)")
 
-        return (np.array(inputs, dtype=np.float32),
-                np.array(questions, dtype=np.float32),
+        return (np.array(inputs, dtype=np.int32),
+                np.array(questions, dtype=np.int32),
                 np.array(answers, dtype=np.int32).reshape(-1, 1),
                 np.array(input_masks, dtype=np.int32))
 
@@ -239,11 +239,11 @@ class DataLoader:
 
                 # Define placeholders
                 input_placeholder = tf.placeholder(
-                    tf.float32, [None, Config.data.max_facts_seq_len, Config.model.embed_dim])
+                    tf.int32, [None, Config.data.max_facts_seq_len])
                 input_mask_placeholder = tf.placeholder(
                     tf.int32, [None, Config.data.max_input_mask_length])
                 question_placeholder = tf.placeholder(
-                    tf.float32, [None, Config.data.max_question_seq_len, Config.model.embed_dim])
+                    tf.int32, [None, Config.data.max_question_seq_len])
                 answer_placeholder = tf.placeholder(
                     tf.int32, [None, 1])
 

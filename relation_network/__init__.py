@@ -14,12 +14,22 @@ class Graph:
         self.dtype = dtype
 
     def build(self,
-              embedding_input=None,
+              input=None,
               input_mask=None,
-              embedding_question=None):
+              question=None):
+        embedding_input, embedding_question = self._build_embed(input, question)
         facts, question = self._build_input_module(embedding_input, input_mask, embedding_question)
         output = self._build_relational_module(facts, question)
         return output
+
+    def _build_embed(self, input, question):
+        with tf.variable_scope ("embeddings", dtype=self.dtype) as scope:
+
+            embedding = tf.get_variable(
+                    "word_embedding", [Config.data.vocab_size, Config.model.embed_dim], self.dtype)
+            embedding_input = tf.nn.embedding_lookup(embedding, input)
+            embedding_question = tf.nn.embedding_lookup(embedding, question)
+            return embedding_input, embedding_question
 
     def _build_input_module(self, embedding_input, input_mask, embedding_question):
         encoder = Encoder(
@@ -49,8 +59,8 @@ class Graph:
                     input_mask = tf.boolean_mask(input_mask[i], tf.sequence_mask(mask_lengths, max_mask_length))
 
                     encoded_facts = tf.gather_nd(input_encoder_outputs[i], tf.reshape(input_mask, [-1, 1]))
-                    padding = tf.zeros(tf.stack([max_mask_length - mask_lengths, Config.model.num_units]))
-                    return tf.concat([encoded_facts, padding], 0)
+                    zero_padding = tf.zeros(tf.stack([max_mask_length - mask_lengths, Config.model.num_units]))
+                    return tf.concat([encoded_facts, zero_padding], axis=0)
 
                 facts_stacked = tf.map_fn(get_encoded_fact, tf.range(start=0, limit=batch_size), dtype=self.dtype)
 
@@ -61,7 +71,7 @@ class Graph:
             _, question = encoder.build(
                     embedding_question, question_length, scope="encoder")
 
-        return facts, question[0]
+        return facts, question
 
     def _build_relational_module(self, facts, question):
         with tf.variable_scope("relational-network-module"):

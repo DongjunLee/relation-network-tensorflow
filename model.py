@@ -37,17 +37,17 @@ class Model:
     def _init_placeholder(self, features, labels):
         self.input_data = features
         if type(features) == dict:
-            self.embedding_input = features["input_data"]
+            self.input = features["input_data"]
             self.input_mask = features["input_data_mask"]
-            self.embedding_question = features["question_data"]
+            self.question = features["question_data"]
 
         self.targets = labels
 
     def build_graph(self):
         graph = relation_network.Graph(self.mode)
-        output = graph.build(embedding_input=self.embedding_input,
+        output = graph.build(input=self.input,
                              input_mask=self.input_mask,
-                             embedding_question=self.embedding_question)
+                             question=self.question)
 
         self._build_prediction(output)
         if self.mode != tf.estimator.ModeKeys.PREDICT:
