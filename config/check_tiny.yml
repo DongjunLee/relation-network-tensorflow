@@ -12,9 +12,17 @@ model:
   cell_type: gru                      # lstm, gru, layer_norm_lstm, nas
   num_layers: 2
   num_units: 16
-  memory_hob: 2
   dropout: 0.5
-  reg_scale: 0.001
+
+  g_units:
+    - 32
+    - 32
+    - 32
+    - 32
+  f_units:
+    - 32
+    - 64
+    - 16
 
 train:
   learning_rate: 0.001
@@ -29,3 +37,6 @@ train:
 
   print_verbose: False
   debug: False
+
+slack:
+  webhook_url: ""
