@@ -16,7 +16,8 @@ class RN:
     def build(self, objects, question):
         object_pair_with_qs = self._combinations(objects, question)
         relations = [self._g_layer(pair) for pair in object_pair_with_qs]
-        output = self._f_layer(sum(relations))
+        all_relations = tf.transpose(tf.stack(relations, axis=0), [1, 0, 2])
+        output = self._f_layer(tf.reduce_sum(all_relations, axis=1))
         return output
 
     def _combinations(self, objects, question):
@@ -28,9 +29,9 @@ class RN:
     def _g_layer(self, input, reuse=tf.AUTO_REUSE):
         with tf.variable_scope("g-layer", reuse=reuse):
             hidden = tf.layers.dense(input, self.g_units[0],
-                    activation=tf.nn.relu,
-                    kernel_initializer=tf.contrib.layers.xavier_initializer(),
-                    name="mlp-0")
+                                     activation=tf.nn.relu,
+                                     kernel_initializer=tf.contrib.layers.xavier_initializer(),
+                                     name="mlp-0")
             for index, unit in enumerate(self.g_units[1:]):
                 hidden = tf.layers.dense(hidden, unit,
                                          activation=tf.nn.relu,

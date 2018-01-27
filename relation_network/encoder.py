@@ -47,14 +47,19 @@ class Encoder:
         if self.encoder_type == self.UNI_ENCODER_TYPE:
             self.cells = self._create_rnn_cells()
 
-            return self.unidirectional_rnn(input_vector, sequence_length, scope=scope)
+            outputs, state = self.unidirectional_rnn(input_vector, sequence_length, scope=scope)
         elif self.encoder_type == self.BI_ENCODER_TYPE:
             self.cells_fw = self._create_rnn_cells(is_list=True)
             self.cells_bw = self._create_rnn_cells(is_list=True)
 
-            return self.bidirectional_rnn(input_vector, sequence_length, scope=scope)
+            outputs, state = self.bidirectional_rnn(input_vector, sequence_length, scope=scope)
         else:
             raise ValueError(f"Unknown encoder_type {self.encoder_type}")
+
+        if "lstm" in self.cell_type:
+            state = state[1]
+
+        return outputs, state
 
     def unidirectional_rnn(self, input_vector, sequence_length, scope=None):
         return tf.nn.dynamic_rnn(
