@@ -1,6 +1,7 @@
 #-- coding: utf-8 -*-
 
 import argparse
+import atexit
 import logging
 
 from hbconfig import Config
@@ -8,8 +9,9 @@ import tensorflow as tf
 from tensorflow.python import debug as tf_debug
 
 from data_loader import DataLoader
-import hook
 from model import Model
+import utils
+
 
 
 def experiment_fn(run_config, params):
@@ -95,11 +97,15 @@ if __name__ == '__main__':
 
     tf.logging._logger.setLevel(logging.INFO)
 
+    # Print Config setting
     Config(args.config)
     print("Config: ", Config)
     if Config.description:
         print("Config Description")
         for key, value in Config.description.items():
             print(f" - {key}: {value}")
+
+    # After terminated Notification to Slack
+    atexit.register(utils.send_message_to_slack, config_name=args.config)
 
     main(args.mode)

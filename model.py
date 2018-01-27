@@ -4,7 +4,7 @@ from __future__ import print_function
 from hbconfig import Config
 import tensorflow as tf
 
-import concrete_model
+import relation_network
 
 
 
@@ -35,13 +35,16 @@ class Model:
             predictions={"prediction": self.predictions})
 
     def _init_placeholder(self, features, labels):
-        self.inputs = features
+        self.input_data = features
         if type(features) == dict:
-            self.inputs = features["input_data"]
+            self.embedding_input = features["input_data"]
+            self.input_mask = features["input_data_mask"]
+            self.embedding_question = features["question_data"]
+
         self.targets = labels
 
     def build_graph(self):
-        graph = concrete_model.Graph(self.mode)
+        graph = relation_network.Graph(self.mode)
         output = graph.build(inputs=self.inputs)
 
         self._build_prediction(output)
@@ -51,13 +54,17 @@ class Model:
             self._build_metric()
 
     def _build_prediction(self, output):
-        # TODO: implments predictions
-        self.predictions = None
+        self.predictions = tf.argmax(output, axis=1)
 
     def _build_loss(self, logits):
         with tf.variable_scope('loss'):
-            # TODO: self.loss
-            pass
+            cross_entropy = tf.losses.sparse_softmax_cross_entropy(
+                    self.targets,
+                    logits,
+                    scope="cross-entropy")
+            reg_term = tf.reduce_sum(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
+
+            self.loss = tf.add(cross_entropy, reg_term)
 
     def _build_optimizer(self):
         self.train_op = tf.contrib.layers.optimize_loss(
@@ -68,6 +75,6 @@ class Model:
             name="train_op")
 
     def _build_metric(self):
-        # TODO: implements tf.metrics
-        #   example) {"accuracy": tf.metrics.accuracy(labels, predicitions)}
-        self.metrics = {}
+        self.metrics = {
+            "accuracy": tf.metrics.accuracy(self.targets, self.predictions)
+        }
