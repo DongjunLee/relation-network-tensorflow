@@ -1,6 +1,12 @@
-# Relation Network
+
+
+# Relation Network [![hb-research](https://img.shields.io/badge/hb--research-experiment-green.svg?style=flat&colorA=448C57&colorB=555555)](https://github.com/hb-research)
 
 TensorFlow implementation of [A simple neural network module for relational reasoning](https://arxiv.org/abs/1706.01427) for bAbi task.
+
+![images](images/architecture.png)
+
+- image: A Simple Neural Network Module for Relational Reasoning Slides by Xiadong Gu
 
 ## Requirements
 
@@ -126,6 +132,10 @@ python main.py --config bAbi_task1 --mode train_and_evaluate
 ### Tensorboar
 
 ```tensorboard --logdir logs```
+
+- bAbi_task1
+
+![images](images/tensorboard-bAbi-task1.png)
 
 
 ## Reference
