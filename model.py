@@ -38,7 +38,6 @@ class Model:
         self.input_data = features
         if type(features) == dict:
             self.input = features["input_data"]
-            self.input_mask = features["input_data_mask"]
             self.question = features["question_data"]
 
         self.targets = labels
@@ -46,7 +45,6 @@ class Model:
     def build_graph(self):
         graph = relation_network.Graph(self.mode)
         output = graph.build(input=self.input,
-                             input_mask=self.input_mask,
                              question=self.question)
 
         self._build_prediction(output)

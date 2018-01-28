@@ -26,37 +26,41 @@ class DataLoader:
 
     def make_train_and_test_set(self):
         train_raw, test_raw = self.get_babi_raw(self.task_id, self.task_test_id)
-        self.max_facts_seq_len, self.max_question_seq_len, self.max_input_mask_len = self.get_max_seq_length(train_raw, test_raw)
+        self.max_facts_seq_len, self.max_fact_count, self.max_question_seq_len = self.get_max_seq_length(train_raw, test_raw)
 
         if self.use_pretrained:
             self.word2vec = self.load_glove(self.w2v_dim)
         else:
             self.word2vec = {}
-        self.vocab = {}
-        self.ivocab = {}
+        self.vocab = {"unk": 0}
+        self.ivocab = {0: "unk"}
 
-        self.create_vector("unknown")
+        self.create_vector("unk")
 
-        train_input, train_question, train_answer, train_input_mask = self.process_input(train_raw)
-        test_input, test_question, test_answer, test_input_mask = self.process_input(test_raw)
+        train_input, train_question, train_answer = self.process_input(train_raw)
+        test_input, test_question, test_answer = self.process_input(test_raw)
 
         return {
-            "train": (train_input, train_input_mask, train_question, train_answer),
-            "test": (test_input, test_input_mask, test_question, test_answer)
+            "train": (train_input, train_question, train_answer),
+            "test": (test_input, test_question, test_answer)
         }
 
     def get_max_seq_length(self, *datasets):
-        max_facts_length, max_question_length, max_input_mask_length = 0, 0, 0
+        max_facts_length, max_fact_count, max_question_length = 0, 0, 0
 
         def count_punctuation(facts):
             return len(list(filter(lambda x: x == ".", facts)))
 
         for dataset in datasets:
             for d in dataset:
-                max_facts_length = max(max_facts_length, len(d['C'].split()))
-                max_input_mask_length = max(max_input_mask_length, count_punctuation(d['C']))
+                fact_lengths = [len(fact.split()) for fact in d['C'].split(".")]
+                max_facts_length = max(max_facts_length, max(fact_lengths))
+
+                fact_count = d['C'].split(".")
+                max_fact_count = max(max_fact_count, len(fact_count))
+
                 max_question_length = max(max_question_length, len(d['Q'].split()))
-        return max_facts_length, max_question_length, max_input_mask_length
+        return max_facts_length, max_fact_count, max_question_length,
 
     def init_babi(self, fname):
         print("==> Loading test from %s" % fname)
@@ -180,38 +184,34 @@ class DataLoader:
         questions = []
         inputs = []
         answers = []
-        input_masks = []
 
         for x in data_raw:
-            inp = x["C"].lower().split(' ')
-            inp = [w for w in inp if len(w) > 0]
+            facts = x["C"].lower().split('.')
+            facts = [fact.split() for fact in facts]
 
             q = x["Q"].lower().split(' ')
             q = [w for w in q if len(w) > 0]
 
-            inp_vector = [self.process_word(word=w, to_return="index") for w in inp]
-            inp_vector = self.pad_input(inp_vector, self.max_facts_seq_len, [0])
+            facts_vector = []
+            for i in range(self.max_fact_count):
+                if i < len(facts):
+                    fact_vector = [self.process_word(word=w, to_return="index") for w in facts[i]]
+                else:
+                    fact_vector = [0]
+                fact_vector = self.pad_input(fact_vector, self.max_facts_seq_len, [0])
+
+                facts_vector.append(fact_vector)
 
             q_vector = [self.process_word(word=w, to_return="index") for w in q]
             q_vector = self.pad_input(q_vector, self.max_question_seq_len, [0])
 
-            inputs.append(inp_vector)
+            inputs.append(facts_vector)
             questions.append(q_vector)
             answers.append(self.process_word(word=x["A"], to_return="index"))
 
-            if self.input_mask_mode == 'word':
-                input_masks.append(np.array([index for index, w in enumerate(inp)], dtype=np.int32))
-            elif self.input_mask_mode == 'sentence':
-                input_mask = [index for index, w in enumerate(inp) if w == '.']
-                input_mask = self.pad_input(input_mask, self.max_input_mask_len, [0])
-                input_masks.append(input_mask)
-            else:
-                raise ValueError("input_mask_mode is only available (word, sentence)")
-
         return (np.array(inputs, dtype=np.int32),
                 np.array(questions, dtype=np.int32),
-                np.array(answers, dtype=np.int32).reshape(-1, 1),
-                np.array(input_masks, dtype=np.int32))
+                np.array(answers, dtype=np.int32).reshape(-1, 1))
 
     def pad_input(self, input_, size, pad_item):
         return input_ + pad_item * (size - len(input_))
@@ -235,13 +235,11 @@ class DataLoader:
         def get_inputs():
             with tf.name_scope(scope):
 
-                inputs, input_masks, questions, answers = data
+                inputs, questions, answers = data
 
                 # Define placeholders
                 input_placeholder = tf.placeholder(
-                    tf.int32, [None, Config.data.max_facts_seq_len])
-                input_mask_placeholder = tf.placeholder(
-                    tf.int32, [None, Config.data.max_input_mask_length])
+                    tf.int32, [None, Config.data.max_fact_count, Config.data.max_facts_seq_len])
                 question_placeholder = tf.placeholder(
                     tf.int32, [None, Config.data.max_question_seq_len])
                 answer_placeholder = tf.placeholder(
@@ -249,8 +247,7 @@ class DataLoader:
 
                 # Build dataset iterator
                 dataset = tf.data.Dataset.from_tensor_slices(
-                    (input_placeholder, input_mask_placeholder,
-                    question_placeholder, answer_placeholder))
+                    (input_placeholder, question_placeholder, answer_placeholder))
 
                 if scope == "train":
                     dataset = dataset.repeat(None)  # Infinite iterations
@@ -261,20 +258,18 @@ class DataLoader:
                 dataset = dataset.batch(batch_size)
 
                 iterator = dataset.make_initializable_iterator()
-                next_input, next_input_mask, next_question, next_answer = iterator.get_next()
+                next_input, next_question, next_answer = iterator.get_next()
 
                 # Set runhook to initialize iterator
                 iterator_initializer_hook.iterator_initializer_func = \
                     lambda sess: sess.run(
                         iterator.initializer,
                         feed_dict={input_placeholder: inputs,
-                                input_mask_placeholder: input_masks,
                                 question_placeholder: questions,
                                 answer_placeholder: answers})
 
                 # Return batched (features, labels)
                 features = {"input_data": next_input,
-                            "input_data_mask": next_input_mask,
                             "question_data": next_question}
                 return (features, next_answer)
 

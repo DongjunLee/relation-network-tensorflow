@@ -37,11 +37,11 @@ def experiment_fn(run_config, params):
     # setting data property
     Config.data.vocab_size = len(vocab)
     Config.data.max_facts_seq_len = data_loader.max_facts_seq_len
+    Config.data.max_fact_count = data_loader.max_fact_count
     Config.data.max_question_seq_len = data_loader.max_question_seq_len
-    Config.data.max_input_mask_length = data_loader.max_input_mask_len
     print("max_facts_seq_len:", data_loader.max_facts_seq_len)
+    print("max_fact_count:", data_loader.max_fact_count)
     print("max_question_seq_len:", data_loader.max_question_seq_len)
-    print("max_input_mask_length:", data_loader.max_input_mask_len)
 
     train_input_fn, train_input_hook = data_loader.make_batch(
             data["train"], batch_size=Config.model.batch_size, scope="train")
