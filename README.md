@@ -31,7 +31,7 @@ Reference : [hb-config](https://github.com/hb-research/hb-config), [Dataset](htt
 
 ## Todo
 
-- Implements relation network graph Logic.
+- model was trained on the joint version of bAbI (all 20 tasks simultaneously), using the full dataset of 10K examples per task. (paper experiments)
 
 ## Config
 
@@ -47,43 +47,41 @@ data:
   PAD_ID: 0
 
 model:
-  batch_size: 32
+  batch_size: 64
   use_pretrained: false             # (true or false)
   embed_dim: 32                     # if use_pretrained: only available 50, 100, 200, 300
   encoder_type: uni                 # uni, bi
-  cell_type: lstm                   # lstm, gru, layer_norm_lstm, nas
+  cell_type: lstm                    # lstm, gru, layer_norm_lstm, nas
   num_layers: 1
   num_units: 32
   dropout: 0.5
 
   g_units:
-    - 256
-    - 256
-    - 256
-    - 256
+    - 64
+    - 64
+    - 64
+    - 64
   f_units:
-    - 256
-    - 512
-    - 159
+    - 64
+    - 128
 
 
 train:
-  learning_rate: 0.00002
+  learning_rate: 0.00003
   optimizer: 'Adam'                # Adagrad, Adam, Ftrl, Momentum, RMSProp, SGD
 
-  train_steps: 100000
+  train_steps: 200000
   model_dir: 'logs/bAbi_task1'
 
   save_checkpoints_steps: 1000
   check_hook_n_iter: 1000
-  min_eval_frequency: 1000
+  min_eval_frequency: 1
 
   print_verbose: False
   debug: False
 
 slack:
   webhook_url: ""                  # after training notify you using slack-webhook
-
 ```
 
 * debug mode : using [tfdbg](https://www.tensorflow.org/programmers_guide/debugger)
@@ -95,11 +93,10 @@ Install requirements.
 
 ```pip install -r requirements.txt```
 
-Then, prepare dataset and pre-trained glove.
+Then, prepare dataset.
 
 ```
 sh scripts/fetch_babi_data.sh
-sh scripts/fetch_glove_data.sh
 ```
 
 Finally, start trand and evalueate model
