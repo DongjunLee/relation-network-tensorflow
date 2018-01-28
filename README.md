@@ -22,6 +22,8 @@ init Project by [hb-base](https://github.com/hb-research/hb-base)
     ├── notebooks               # Prototyping with numpy or tf.interactivesession
     ├── relation_network        # transformer architecture graphs (from input to logits)
         ├── __init__.py             # Graph logic
+        ├── encoder.py              # Encoder
+        └── relation.py             # Relation Network Module
     ├── data_loader.py          # raw_date -> precossed_data -> generate_batch (using Dataset)
     ├── hook.py                 # training or test hook feature (eg. print_variables)
     ├── main.py                 # define experiment_fn
