@@ -26,10 +26,10 @@ init Project by [hb-base](https://github.com/hb-research/hb-base)
     ├── config                  # Config files (.yml, .json) using with hb-config
     ├── data                    # dataset path
     ├── notebooks               # Prototyping with numpy or tf.interactivesession
-    ├── relation_network        # transformer architecture graphs (from input to logits)
+    ├── relation_network        # relation network architecture graphs (from input to logits)
         ├── __init__.py             # Graph logic
         ├── encoder.py              # Encoder
-        └── relation.py             # Relation Network Module
+        └── relation.py             # RN Module
     ├── data_loader.py          # raw_date -> precossed_data -> generate_batch (using Dataset)
     ├── hook.py                 # training or test hook feature (eg. print_variables)
     ├── main.py                 # define experiment_fn
@@ -107,7 +107,7 @@ Then, prepare dataset.
 sh scripts/fetch_babi_data.sh
 ```
 
-Finally, start trand and evalueate model
+Finally, start train and evaluate model
 ```
 python main.py --config bAbi_task1 --mode train_and_evaluate
 ```
